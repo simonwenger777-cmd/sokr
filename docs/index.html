@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#efe7d6">
 <title>Сокращатель</title>
-<script>if(location.hostname.endsWith("github.io"))location.replace("https://sokr.onrender.com/"+location.hash);</script>
+<script>if(location.hostname.endsWith("github.io")){var rest=location.pathname.split("/").filter(Boolean).slice(1).join("/");location.replace("https://sokr.onrender.com/"+(rest?rest:"")+location.search+location.hash);}</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%23d23b2a' width='32' height='32' rx='6'/%3E%3Cpath fill='white' d='M8 11h16v2.2H8zm0 5h12v2.2H8zm0 5h9v2.2H8z'/%3E%3C/svg%3E">
 <style>
   :root {
@@ -125,7 +125,7 @@
       <button class="ghost" id="copy-link" type="button">Скопировать ссылку</button>
     </div>
     <p class="msg" id="maker-msg" role="status"></p>
-    <p class="hint">В автовыдачу кладётся свёрнутая строка или ссылка. Ссылка открывает текст сразу. Страница статическая: её можно открыть хоть всем покупателям разом, отдельный сервер для этого не нужен.</p>
+    <p class="hint">Пароли и длинные токены не сжимаются: в них нет повторов. Кнопка сохраняет строку и отдаёт короткую ссылку. Её и вставляйте в автовыдачу.</p>
   </section>
 </main>
 <script src="fold.js"></script>
@@ -188,31 +188,55 @@ function extractPacked(input) {
   return text;
 }
 
-function showFold(view, linkPacked, sourceLength, shorter) {
-  lastPacked = view;
-  lastLink = pageRoot() + "#" + linkPacked;
+function showShort(url, sourceLength) {
+  lastPacked = url;
+  lastLink = url;
   const line = $("line");
   line.hidden = false;
-  line.textContent = view;
+  line.textContent = url;
   $("sizes").hidden = false;
-  $("sizes").textContent = shorter
-    ? "Было " + sourceLength + " знаков, стало " + view.length + "."
-    : "Было " + sourceLength + " знаков. Сжатие эту строку не укорачивает. Ссылка всё равно откроет её здесь.";
+  $("sizes").textContent = "Было " + sourceLength + " знаков, стало " + url.length + ".";
   $("after").hidden = false;
-  $("copy-link").hidden = false;
-  setMsg($("maker-msg"), shorter
-    ? "Эту строку можно вставить в автовыдачу. Ссылка развернёт её сама."
-    : "Для автовыдачи удобнее ссылка: по ней текст откроется сразу.", "ok");
+  $("copy-link").hidden = true;
+  setMsg($("maker-msg"), "Короткая ссылка готова. Её можно вставить в автовыдачу.", "ok");
+}
+
+async function fetchPayload(code) {
+  const res = await fetch("/api/get/" + code, { cache: "no-store" });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || "нет такой строки");
+  return body.payload || "";
+}
+
+function codeFrom(input) {
+  let text = input.trim();
+  if (/^https?:\/\//i.test(text)) {
+    try {
+      const url = new URL(text);
+      if (url.hash.length > 1) return "";
+      const parts = url.pathname.split("/").filter(Boolean);
+      text = parts.length ? parts[parts.length - 1] : "";
+    } catch (_) {}
+  }
+  text = text.toLowerCase();
+  return /^[a-z0-9]{4,32}$/.test(text) ? text : "";
 }
 
 $("do-fold").onclick = async () => {
   const btn = $("do-fold");
   btn.disabled = true;
-  setMsg($("maker-msg"), "", "");
+  setMsg($("maker-msg"), "Сохраняю…", "");
   try {
+    if (!raw.value) throw new Error("Сначала вставьте строку");
     if (raw.value.length > 100000) throw new Error("Строка длиннее 100 000 знаков");
-    const result = await fold(raw.value);
-    showFold(result.packed, result.link, raw.value.length, result.shorter);
+    const res = await fetch("/api/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: raw.value, ttlSec: 2592000, once: false })
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || "не удалось свернуть");
+    showShort(location.origin + "/" + body.code, raw.value.length);
   } catch (err) {
     setMsg($("maker-msg"), err.message || "не удалось свернуть", "bad");
   } finally {
@@ -226,8 +250,9 @@ $("do-unfold").onclick = async () => {
   setMsg($("maker-msg"), "", "");
   try {
     const packed = extractPacked(raw.value);
-    if (!packed) throw new Error("Вставьте свёрнутую строку или ссылку");
-    const text = await unfold(packed);
+    if (!packed) throw new Error("Вставьте ссылку или свёрнутую строку");
+    const code = codeFrom(packed);
+    const text = code ? await fetchPayload(code) : await unfold(packed);
     const line = $("line");
     line.hidden = false;
     line.textContent = text;
@@ -251,26 +276,35 @@ $("copy-link").onclick = () => {
   copyText(link, $("copy-link"));
 };
 $("copy-buyer").onclick = () => copyText(buyerText, $("copy-buyer"));
-$("new-fold").onclick = () => { location.hash = ""; location.reload(); };
+$("new-fold").onclick = () => { location.href = "/"; };
 
 raw.addEventListener("keydown", (ev) => {
   if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") $("do-fold").click();
 });
 
-async function openHash() {
+function pathCode() {
+  const parts = location.pathname.split("/").filter(Boolean);
+  if (location.hostname.endsWith("github.io")) parts.shift();
+  if (parts.length !== 1) return "";
+  const code = parts[0].toLowerCase();
+  return /^[a-z0-9]{4,32}$/.test(code) ? code : "";
+}
+
+async function openReady() {
+  const code = pathCode();
   const packed = payloadFromHash();
-  if (!packed) return;
+  if (!code && !packed) return;
   $("maker").hidden = true;
   $("buyer").hidden = false;
   try {
-    buyerText = await unfold(packed);
+    buyerText = code ? await fetchPayload(code) : await unfold(packed);
     $("buyer-data").textContent = buyerText;
   } catch (err) {
     $("buyer-data").textContent = "";
     setMsg($("buyer-msg"), err.message || "не удалось развернуть", "bad");
   }
 }
-openHash();
+openReady();
 </script>
 </body>
 </html>

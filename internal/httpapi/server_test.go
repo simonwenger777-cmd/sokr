@@ -102,7 +102,7 @@ func TestHealthAndHome(t *testing.T) {
 	srv, _ := newTestServer(t)
 	defer srv.Close()
 	home := getJSON(t, srv.URL+"/")
-	if home.StatusCode != http.StatusOK || !bytes.Contains(home.body, []byte("Короткий ключ")) {
+	if home.StatusCode != http.StatusOK || !bytes.Contains(home.body, []byte("Свернуть")) {
 		t.Fatalf("home %d", home.StatusCode)
 	}
 	health := getJSON(t, srv.URL+"/healthz")

@@ -48,11 +48,18 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/create", s.create)
 	mux.HandleFunc("GET /api/get/{code}", s.get)
+	mux.HandleFunc("GET /fold.js", s.foldJS)
 	mux.HandleFunc("GET /healthz", s.health)
 	mux.HandleFunc("GET /robots.txt", s.robots)
 	mux.HandleFunc("GET /", s.pageHandler)
 	mux.HandleFunc("GET /{code}", s.pageHandler)
 	return s.log(security(mux))
+}
+
+func (s *Server) foldJS(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/javascript; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(FoldJS)
 }
 
 func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
@@ -193,7 +200,7 @@ func writeStoreErr(w http.ResponseWriter, err error) {
 
 func authorized(r *http.Request, token string) bool {
 	if token == "" {
-		return false
+		return true
 	}
 	got := r.Header.Get("Authorization")
 	const prefix = "Bearer "
