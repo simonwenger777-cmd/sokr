@@ -62,12 +62,32 @@ func (p *Postgres) Close() {
 func (p *Postgres) migrate(ctx context.Context) error {
 	_, err := p.pool.Exec(ctx, `
 CREATE TABLE IF NOT EXISTS links (
-  code TEXT PRIMARY KEY CHECK (char_length(code) BETWEEN 4 AND 40),
+  code TEXT PRIMARY KEY,
   payload TEXT NOT NULL CHECK (octet_length(payload) BETWEEN 1 AND 100000),
   once BOOLEAN NOT NULL DEFAULT FALSE,
   expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 )`)
+	if err != nil {
+		return err
+	}
+	_, err = p.pool.Exec(ctx, `
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT con.conname
+    FROM pg_constraint con
+    JOIN pg_class rel ON rel.oid = con.conrelid
+    WHERE rel.relname = 'links'
+      AND con.contype = 'c'
+      AND pg_get_constraintdef(con.oid) ILIKE '%char_length(code)%'
+  LOOP
+    EXECUTE format('ALTER TABLE links DROP CONSTRAINT %I', r.conname);
+  END LOOP;
+END $$;
+ALTER TABLE links ADD CONSTRAINT links_code_len CHECK (char_length(code) BETWEEN 4 AND 80);
+`)
 	return err
 }
 

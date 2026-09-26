@@ -20,7 +20,7 @@ import (
 const maxPayload = 100_000
 
 var (
-	codeRe = regexp.MustCompile(`^[a-z0-9]{4,32}$`)
+	codeRe = regexp.MustCompile(`^[a-z0-9]{4,80}$`)
 	alpha  = []byte("abcdefghjkmnpqrstuvwxyz23456789")
 )
 
@@ -152,7 +152,9 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 
 	var last error
 	for i := 0; i < 6; i++ {
-		code, err := randomCode(8)
+		// 76 characters makes https://sokr.onrender.com/<code> 102 characters,
+		// three times the previous 34-character link.
+		code, err := randomCode(76)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, errBody("не удалось собрать ключ"))
 			return

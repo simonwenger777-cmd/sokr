@@ -219,7 +219,7 @@ function codeFrom(input) {
     } catch (_) {}
   }
   text = text.toLowerCase();
-  return /^[a-z0-9]{4,32}$/.test(text) ? text : "";
+  return /^[a-z0-9]{4,80}$/.test(text) ? text : "";
 }
 
 $("do-fold").onclick = async () => {
@@ -287,7 +287,7 @@ function pathCode() {
   if (location.hostname.endsWith("github.io")) parts.shift();
   if (parts.length !== 1) return "";
   const code = parts[0].toLowerCase();
-  return /^[a-z0-9]{4,32}$/.test(code) ? code : "";
+  return /^[a-z0-9]{4,80}$/.test(code) ? code : "";
 }
 
 async function openReady() {

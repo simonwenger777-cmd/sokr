@@ -36,7 +36,7 @@ func TestCreateAndRead(t *testing.T) {
 	var created struct {
 		Code string `json:"code"`
 	}
-	if err := json.Unmarshal(res.body, &created); err != nil || len(created.Code) != 8 {
+	if err := json.Unmarshal(res.body, &created); err != nil || len(created.Code) != 76 {
 		t.Fatalf("code %#v err %v", created, err)
 	}
 
