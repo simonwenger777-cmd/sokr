@@ -41,7 +41,7 @@ func (l *Lazy) Put(ctx context.Context, code string, rec Record) error {
 func (l *Lazy) Take(ctx context.Context, code string) (string, error) {
 	inner, err := l.current()
 	if err != nil {
-		return err
+		return "", err
 	}
 	return inner.Take(ctx, code)
 }
