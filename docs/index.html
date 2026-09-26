@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#efe7d6">
+<title>Сокращатель</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%23d23b2a' width='32' height='32' rx='6'/%3E%3Cpath fill='white' d='M8 11h16v2.2H8zm0 5h12v2.2H8zm0 5h9v2.2H8z'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #efe7d6;
+    --ink: #1a1714;
+    --card: #fbf6ec;
+    --line: #d9cdb6;
+    --red: #d23b2a;
+    --red-ink: #fff8f4;
+    --ok: #1d6b43;
+    --muted: #6e655b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 420px at 0% -10%, #fff 0%, transparent 55%),
+      var(--bg);
+    font: 16px/1.45 "Segoe UI", system-ui, sans-serif;
+  }
+  main { max-width: 40rem; margin: 0 auto; padding: 1.4rem 1.1rem 3rem; }
+  .mark {
+    display: inline-block;
+    margin: 0 0 .7rem;
+    padding: .2rem .5rem;
+    border: 1.5px solid var(--red);
+    color: var(--red);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+  h1 { margin: 0; font-size: 2rem; letter-spacing: -.03em; }
+  h2 { margin: 0; font-size: 1.35rem; }
+  .lead, .hint, .meta { color: var(--muted); }
+  .lead { margin: .45rem 0 0; }
+  section {
+    margin-top: 1.2rem;
+    padding: 1rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+  }
+  label { display: block; margin: 0 0 .3rem; font-size: .86rem; font-weight: 650; }
+  textarea {
+    width: 100%;
+    min-height: 9rem;
+    padding: .7rem .75rem;
+    color: var(--ink);
+    background: #fff;
+    border: 1px solid var(--line);
+    font: inherit;
+    resize: vertical;
+  }
+  textarea:focus, button:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .actions { display: grid; gap: .6rem; margin-top: 1rem; }
+  button {
+    min-height: 3rem;
+    padding: .7rem .9rem;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+  }
+  button.primary { color: var(--red-ink); background: var(--red); }
+  button.ghost { color: var(--ink); background: transparent; border: 1px solid var(--ink); }
+  button:disabled { opacity: .55; cursor: wait; }
+  .out {
+    margin: .8rem 0 0;
+    padding: .8rem;
+    overflow-wrap: anywhere;
+    background: #fff;
+    border: 1px dashed var(--ink);
+    font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+    white-space: pre-wrap;
+  }
+  .msg { margin: .7rem 0 0; min-height: 1.2em; }
+  .msg.bad { color: var(--red); }
+  .msg.ok { color: var(--ok); }
+  a { color: var(--ink); }
+  @media (min-width: 640px) {
+    .actions.two { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="mark">автовыдача</p>
+  <h1>Сокращатель</h1>
+  <p class="lead">Длинная строка сворачивается здесь же, в браузере. Покупатель открывает ссылку или вставляет свёрнутую строку и получает текст обратно. На сервер ничего не уходит.</p>
+
+  <section id="buyer" hidden>
+    <h2>Данные</h2>
+    <pre class="out" id="buyer-data"></pre>
+    <div class="actions two">
+      <button class="primary" id="copy-buyer" type="button">Скопировать данные</button>
+      <button class="ghost" id="new-fold" type="button">Свернуть другую</button>
+    </div>
+    <p class="msg" id="buyer-msg" role="status"></p>
+  </section>
+
+  <section id="maker">
+    <label for="raw">Строка</label>
+    <textarea id="raw" spellcheck="false" autocomplete="off" placeholder="Вставьте текст, который должен получить покупатель, или уже свёрнутую строку"></textarea>
+    <p class="meta" id="count">0 знаков</p>
+    <div class="actions two">
+      <button class="primary" id="do-fold" type="button">Свернуть</button>
+      <button class="ghost" id="do-unfold" type="button">Развернуть</button>
+    </div>
+    <pre class="out" id="line" hidden></pre>
+    <p class="meta" id="sizes" hidden></p>
+    <div class="actions two" id="after" hidden>
+      <button class="primary" id="copy-line" type="button">Скопировать строку</button>
+      <button class="ghost" id="copy-link" type="button">Скопировать ссылку</button>
+    </div>
+    <p class="msg" id="maker-msg" role="status"></p>
+    <p class="hint">В автовыдачу кладётся свёрнутая строка или ссылка. Ссылка открывает текст сразу. Страница статическая: её можно открыть хоть всем покупателям разом, отдельный сервер для этого не нужен.</p>
+  </section>
+</main>
+<script src="fold.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const raw = $("raw");
+const count = $("count");
+let lastPacked = "";
+let lastLink = "";
+let buyerText = "";
+
+raw.addEventListener("input", () => {
+  count.textContent = raw.value.length + " знаков";
+});
+
+function setMsg(el, text, kind) {
+  el.textContent = text || "";
+  el.className = "msg" + (kind ? " " + kind : "");
+}
+
+async function copyText(text, btn) {
+  const prev = btn.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch (_) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }
+  btn.textContent = "Скопировано";
+  setTimeout(() => { btn.textContent = prev; }, 1400);
+}
+
+function pageRoot() {
+  const path = location.pathname.replace(/index\.html$/, "");
+  return location.origin + path;
+}
+
+function payloadFromHash() {
+  const hash = location.hash.startsWith("#") ? location.hash.slice(1) : "";
+  if (!hash) return "";
+  try { return decodeURIComponent(hash); } catch (_) { return hash; }
+}
+
+function extractPacked(input) {
+  const text = input.trim();
+  if (/^https?:\/\//i.test(text)) {
+    try {
+      const url = new URL(text);
+      if (url.hash.length > 1) {
+        const hash = url.hash.slice(1);
+        try { return decodeURIComponent(hash); } catch (_) { return hash; }
+      }
+    } catch (_) {}
+  }
+  if (text.startsWith("#")) return extractPacked(text.slice(1));
+  return text;
+}
+
+function showFold(view, linkPacked, sourceLength, shorter) {
+  lastPacked = view;
+  lastLink = pageRoot() + "#" + linkPacked;
+  const line = $("line");
+  line.hidden = false;
+  line.textContent = view;
+  $("sizes").hidden = false;
+  $("sizes").textContent = shorter
+    ? "Было " + sourceLength + " знаков, стало " + view.length + "."
+    : "Было " + sourceLength + " знаков. Сжатие эту строку не укорачивает. Ссылка всё равно откроет её здесь.";
+  $("after").hidden = false;
+  $("copy-link").hidden = false;
+  setMsg($("maker-msg"), shorter
+    ? "Эту строку можно вставить в автовыдачу. Ссылка развернёт её сама."
+    : "Для автовыдачи удобнее ссылка: по ней текст откроется сразу.", "ok");
+}
+
+$("do-fold").onclick = async () => {
+  const btn = $("do-fold");
+  btn.disabled = true;
+  setMsg($("maker-msg"), "", "");
+  try {
+    if (raw.value.length > 100000) throw new Error("Строка длиннее 100 000 знаков");
+    const result = await fold(raw.value);
+    showFold(result.packed, result.link, raw.value.length, result.shorter);
+  } catch (err) {
+    setMsg($("maker-msg"), err.message || "не удалось свернуть", "bad");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$("do-unfold").onclick = async () => {
+  const btn = $("do-unfold");
+  btn.disabled = true;
+  setMsg($("maker-msg"), "", "");
+  try {
+    const packed = extractPacked(raw.value);
+    if (!packed) throw new Error("Вставьте свёрнутую строку или ссылку");
+    const text = await unfold(packed);
+    const line = $("line");
+    line.hidden = false;
+    line.textContent = text;
+    $("sizes").hidden = false;
+    $("sizes").textContent = "Развернулось в " + text.length + " знаков.";
+    $("after").hidden = false;
+    lastPacked = text;
+    lastLink = "";
+    $("copy-link").hidden = true;
+    setMsg($("maker-msg"), "Готово.", "ok");
+  } catch (err) {
+    setMsg($("maker-msg"), err.message || "не удалось развернуть", "bad");
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+$("copy-line").onclick = () => copyText($("line").textContent, $("copy-line"));
+$("copy-link").onclick = () => {
+  const link = lastLink || (pageRoot() + "#" + lastPacked);
+  copyText(link, $("copy-link"));
+};
+$("copy-buyer").onclick = () => copyText(buyerText, $("copy-buyer"));
+$("new-fold").onclick = () => { location.hash = ""; location.reload(); };
+
+raw.addEventListener("keydown", (ev) => {
+  if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") $("do-fold").click();
+});
+
+async function openHash() {
+  const packed = payloadFromHash();
+  if (!packed) return;
+  $("maker").hidden = true;
+  $("buyer").hidden = false;
+  try {
+    buyerText = await unfold(packed);
+    $("buyer-data").textContent = buyerText;
+  } catch (err) {
+    $("buyer-data").textContent = "";
+    setMsg($("buyer-msg"), err.message || "не удалось развернуть", "bad");
+  }
+}
+openHash();
+</script>
+</body>
+</html>
