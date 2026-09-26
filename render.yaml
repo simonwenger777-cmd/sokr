@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: sokr
+    runtime: go
+    plan: free
+    region: frankfurt
+    buildCommand: go build -ldflags="-s -w" -o bin/sokr ./cmd/server
+    startCommand: ./bin/sokr
+    healthCheckPath: /healthz
+    envVars:
+      - key: CREATE_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sokr-db
+          property: connectionString
+
+databases:
+  - name: sokr-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: "16"
+    databaseName: sokr
+    user: sokr
