@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	ErrNotFound = errors.New("not found")
-	ErrExists   = errors.New("exists")
+	ErrNotFound    = errors.New("not found")
+	ErrExists      = errors.New("exists")
+	ErrUnavailable = errors.New("unavailable")
 )
 
 type Record struct {

@@ -28,12 +28,8 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	pg, err := store.Connect(ctx, dbURL)
-	if err != nil {
-		log.Fatalf("database: %v", err)
-	}
-	defer pg.Close()
-	go sweep(ctx, pg)
+	lazy := store.NewLazy()
+	go connect(ctx, dbURL, lazy)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -41,7 +37,7 @@ func main() {
 	}
 	srv := &http.Server{
 		Addr:              ":" + port,
-		Handler:           httpapi.New(pg, token, httpapi.Page).Handler(),
+		Handler:           httpapi.New(lazy, token, httpapi.Page).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       20 * time.Second,
 		WriteTimeout:      30 * time.Second,
@@ -57,6 +53,26 @@ func main() {
 	log.Printf("listening on :%s", port)
 	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatal(err)
+	}
+}
+
+func connect(ctx context.Context, dbURL string, lazy *store.Lazy) {
+	for {
+		pg, err := store.Connect(ctx, dbURL)
+		if err == nil {
+			lazy.Ready(pg)
+			log.Printf("database ready")
+			go sweep(ctx, pg)
+			<-ctx.Done()
+			pg.Close()
+			return
+		}
+		log.Printf("database: %v", err)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(5 * time.Second):
+		}
 	}
 }
 

@@ -27,7 +27,7 @@ func Connect(ctx context.Context, url string) (*Postgres, error) {
 
 	var pool *pgxpool.Pool
 	var last error
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 8; i++ {
 		pool, last = pgxpool.NewWithConfig(ctx, cfg)
 		if last == nil {
 			pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
